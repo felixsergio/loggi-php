@@ -30,7 +30,8 @@ class Request extends Http
 
         $this->query = $query;
 
-        $this->logger = new Logger();
+        $logger = new Logger();
+        $this->logger = $logger->execute();
 
         $this->request($method, $url, [
             'body' => $query,

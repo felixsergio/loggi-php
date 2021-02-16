@@ -10,7 +10,7 @@ use Monolog\Logger as MonologLogger;
  *
  * @package  FelixBraspag\Marketplace
  */
-class Logger
+class Logger extends MonologLogger
 {
     private $logger;
 
@@ -21,12 +21,17 @@ class Logger
     public function __construct($channel = 'main')
     {
         if(getenv('LOGGI_PHP_LOGFILE')) {
-            $this->logger = new MonologLogger($channel);
-            $this->pushHandler(new StreamHandler(getenv('LOGGI_PHP_LOGFILE'), MonologLogger::DEBUG));
+            $this->monolog = new MonologLogger($channel);
+            $this->monolog->pushHandler(new StreamHandler(getenv('LOGGI_PHP_LOGFILE'), MonologLogger::DEBUG));
 
-            return $this->logger;
+            return $this->monolog;
         }
 
         return null;
+    }
+
+    public function execute()
+    {
+        return $this->monolog;
     }
 }
