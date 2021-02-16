@@ -3,6 +3,7 @@
 namespace FelixLoggi;
 
 use FelixLoggi\GraphQL;
+use FelixLoggi\Logger;
 
 class Request extends Http
 {
@@ -28,6 +29,8 @@ class Request extends Http
         $query = (string) new GraphQL($graph);
 
         $this->query = $query;
+
+        $this->logger = new Logger();
 
         $this->request($method, $url, [
             'body' => $query,
@@ -60,10 +63,26 @@ class Request extends Http
         curl_setopt($curl, CURLOPT_RETURNTRANSFER, true);
         curl_setopt($curl, CURLOPT_POSTFIELDS, $options['body']);
 
+        if ($this->logger !== null) {
+            $this->logger->debug('Requisição', [
+                    sprintf('%s %s', $method, $url),
+                    $options['headers'],
+                    $options['body']
+                ]
+            );
+        }
+
         $response   = curl_exec($curl);
 
         if($response === false){
             $this->errors = curl_error($curl);
+
+            if (curl_errno($curl)) {
+                $message = sprintf('cURL error[%s]: %s', curl_errno($curl), curl_error($curl));
+
+                $this->logger->error($message);
+            }
+
         }else{
             $header_size = curl_getinfo($curl, CURLINFO_HEADER_SIZE);
             $body = substr($response, $header_size);
@@ -71,6 +90,13 @@ class Request extends Http
             $this->code = curl_getinfo($curl, CURLINFO_HTTP_CODE);
             $this->headers =  curl_getinfo($curl, CURLINFO_HEADER_OUT);
             $this->body = $this->isJson($body)? json_decode($body) : $body;
+
+            if ($this->logger !== null) {
+                $this->logger->debug('Resposta', [
+                    sprintf('Código de status: %s', $this->code),
+                    $this->body
+                ]);
+            }
         }
 
         return $this;
